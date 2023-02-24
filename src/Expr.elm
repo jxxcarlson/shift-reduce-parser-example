@@ -11,14 +11,14 @@ type Expr = Integer Int | BinOp BinOpSymbol | Unop UnopSymbol | BinopExpr BinOpS
 
 
 
-parse : String -> Result (List Parser.DeadEnd) (Result (List (Either Token Expr)) Int)
+parse : String ->  Result (Either String (List (Either Token Expr))) Int
 parse str =
-    case Token.parse str of
+    case Token.tokenizer str of
         Ok tokens ->
           case parseEvalTokens tokens of
-              Ok stuff -> Ok (Ok stuff)
-              Err stuff -> Ok (Err stuff)
-        Err stuff -> Err stuff
+              Ok expr -> (Ok expr)
+              Err state -> (Err (Right state))
+        Err _ -> Err (Left "Tokenization error")
 
 
 {-|
@@ -89,13 +89,12 @@ reduce3 : State -> State
 reduce3 state =
     case state.stack of
        [] -> state
-
-
        (left::middle::right::rest) ->
                   case (left, middle, right) of
                     (Right (Integer a), Right (BinOp op), Right (Integer b)) ->
-                        { state | stack = Right (Integer (symbolToOperator(op) a b)) :: rest }
-
+                        if List.member op [Minus, Div] then
+                               { state | stack = Right (Integer (symbolToOperator(op) b a)) :: rest }
+                        else { state | stack = Right (Integer (symbolToOperator(op) a b)) :: rest }
                     (Right ERP, expr, Right ELP) -> { state | stack = expr :: rest}
                     _ -> state
 

@@ -1,4 +1,4 @@
-module Token exposing (BinOpSymbol(..), Token(..), UnopSymbol(..), parse)
+module Token exposing (BinOpSymbol(..), Token(..), UnopSymbol(..), tokenizer)
 
 import Parser exposing ((|.), (|=), Parser)
 
@@ -22,8 +22,8 @@ type UnopSymbol
     = UMinus
 
 
-parse : String -> Result (List Parser.DeadEnd) (List Token)
-parse str = Parser.run parser (String.replace " " "" str)
+tokenizer : String -> Result (List Parser.DeadEnd) (List Token)
+tokenizer str = Parser.run parser (String.replace " " "" str)
 
 parser = many tokenParser
 
