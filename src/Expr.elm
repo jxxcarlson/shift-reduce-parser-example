@@ -92,9 +92,7 @@ reduce3 state =
        (left::middle::right::rest) ->
                   case (left, middle, right) of
                     (Right (Integer a), Right (BinOp op), Right (Integer b)) ->
-                        if List.member op [Minus, Div] then
-                               { state | stack = Right (Integer (symbolToOperator(op) b a)) :: rest }
-                        else { state | stack = Right (Integer (symbolToOperator(op) a b)) :: rest }
+                        { state | stack = Right (Integer (symbolToOperator(op) b a)) :: rest }
                     (Right ERP, expr, Right ELP) -> { state | stack = expr :: rest}
                     _ -> state
 
