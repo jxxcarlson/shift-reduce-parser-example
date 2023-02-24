@@ -1,17 +1,14 @@
-module Expr exposing (parseEval, Token(..), Expr(..))
+module Expr exposing (parseEval, Expr(..))
 
 import Either exposing(Either(..))
 import List.Extra
+import Token exposing (Token(..), BinOpSymbol(..), UnopSymbol(..))
 
 type alias State = { tokens : List Token, currentPosition : Int, stack : List (Either Token Expr)}
 
 type Expr = Integer Int | BinOp BinOpSymbol | Unop UnopSymbol | BinopExpr BinOpSymbol Expr Expr | ELP | ERP
 
-type Token = TInt Int | TBinOp BinOpSymbol | LP | RP
 
-type BinOpSymbol = Plus | Minus | Times | Div
-
-type UnopSymbol = UMinus
 
 
 init : List Token -> State
@@ -31,11 +28,6 @@ parseEval tokens =
         Right (Integer n) :: [] -> Ok n
         _ -> Err finalState.stack
 
-inputBad = "()"
-inputGood = "2 * (3 + 5)"
-
-tokensBad = [RP, LP]
-tokensGood = [TInt 2, TBinOp Times, LP, TInt 3,TBinOp Plus, TInt 5, RP ]
 
 
 {-|
@@ -64,6 +56,10 @@ shift state =
        Just token ->  { state | currentPosition = state.currentPosition + 1, stack = Left token :: state.stack}
 
 
+reduce : State -> State
+reduce state =
+    state |> reduce1 |> reduce3
+
 reduce1 : State -> State
 reduce1 state =
     case state.stack of
@@ -89,16 +85,17 @@ reduce3 state =
        (left::middle::right::rest) ->
                   case (left, middle, right) of
                     (Right (Integer a), Right (BinOp op), Right (Integer b)) ->
-                        case op of
-                            Plus -> { state | stack = Right (Integer (a + b)) :: rest }
-                            Minus -> { state | stack = Right (Integer (a - b)) :: rest }
-                            Times -> { state | stack = Right (Integer (a * b)) :: rest }
-                            Div -> { state | stack = Right (Integer (a // b)) :: rest }
+                        { state | stack = Right (Integer (symbolToOperator(op) a b)) :: rest }
+
                     (Right ERP, expr, Right ELP) -> { state | stack = expr :: rest}
                     _ -> state
 
        _ -> state
 
-reduce : State -> State
-reduce state =
-    state |> reduce1 |> reduce3
+symbolToOperator : BinOpSymbol -> (Int -> Int -> Int)
+symbolToOperator op =
+    case op of
+        Plus -> (+)
+        Minus -> (-)
+        Times -> (*)
+        Div -> (//)
