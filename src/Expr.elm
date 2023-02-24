@@ -1,8 +1,9 @@
-module Expr exposing (parseEval, Expr(..))
+module Expr exposing (parse, Expr(..))
 
 import Either exposing(Either(..))
 import List.Extra
 import Token exposing (Token(..), BinOpSymbol(..), UnopSymbol(..))
+import Parser
 
 type alias State = { tokens : List Token, currentPosition : Int, stack : List (Either Token Expr)}
 
@@ -10,9 +11,15 @@ type Expr = Integer Int | BinOp BinOpSymbol | Unop UnopSymbol | BinopExpr BinOpS
 
 
 
+parse : String -> Result (List Parser.DeadEnd) (Result (List (Either Token Expr)) Int)
+parse str =
+    case Token.parse str of
+        Ok tokens ->
+          case parseEvalTokens tokens of
+              Ok stuff -> Ok (Ok stuff)
+              Err stuff -> Ok (Err stuff)
+        Err stuff -> Err stuff
 
-init : List Token -> State
-init tokens = { tokens = tokens, currentPosition = 0, stack = []}
 
 {-|
     > parseEval tokensGood
@@ -21,13 +28,15 @@ init tokens = { tokens = tokens, currentPosition = 0, stack = []}
     > parseEval tokensBad
     Err [Right ERP,Right ELP]
 -}
-parseEval: List Token -> Result (List (Either Token Expr)) Int
-parseEval tokens =
+parseEvalTokens: List Token -> Result (List (Either Token Expr)) Int
+parseEvalTokens tokens =
     let finalState = reduceState (init tokens) in
     case finalState.stack of
         Right (Integer n) :: [] -> Ok n
         _ -> Err finalState.stack
 
+init : List Token -> State
+init tokens = { tokens = tokens, currentPosition = 0, stack = []}
 
 
 {-|
